@@ -1,17 +1,17 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
-    alias(libs.plugins.google.gms.google.services)
+    id("com.google.gms.google-services")
 }
 
 android {
     namespace = "com.example.firebaseproject"
-    compileSdk = 36 // Nâng lên 36 theo yêu cầu của thư viện
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.example.firebaseproject"
         minSdk = 24
-        targetSdk = 35 // Có thể giữ 35 hoặc nâng lên 36 nếu muốn
+        targetSdk = 35
         versionCode = 1
         versionName = "1.0"
 
@@ -42,14 +42,11 @@ dependencies {
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))
     
-    // Sửa lại các accessor từ libs.versions.toml
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
-    
-    // Firebase
-    implementation(platform("com.google.firebase:firebase-bom:34.11.0"))
+
     implementation(libs.firebase.firestore)
     
     testImplementation(libs.junit)

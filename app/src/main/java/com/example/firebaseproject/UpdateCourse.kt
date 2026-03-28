@@ -8,6 +8,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -23,24 +24,18 @@ import com.example.firebaseproject.ui.theme.greenColor
 import com.google.firebase.firestore.FirebaseFirestore
 
 class UpdateCourse : ComponentActivity() {
-
     @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val name = intent.getStringExtra("courseName")
+        val duration = intent.getStringExtra("courseDuration")
+        val description = intent.getStringExtra("courseDescription")
+        val courseID = intent.getStringExtra("courseID")
 
         setContent {
             FirebaseprojectTheme {
                 val context = LocalContext.current
-
-                val name = intent.getStringExtra("courseName")
-                val duration = intent.getStringExtra("courseDuration")
-                val description = intent.getStringExtra("courseDescription")
-                val courseID = intent.getStringExtra("courseID")
-
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
+                Surface(modifier = Modifier.fillMaxSize(), color = Color.White) {
                     Scaffold(
                         topBar = {
                             CenterAlignedTopAppBar(
@@ -48,24 +43,11 @@ class UpdateCourse : ComponentActivity() {
                                     containerColor = greenColor,
                                     titleContentColor = Color.White
                                 ),
-                                title = {
-                                    Text(
-                                        text = "GFG",
-                                        modifier = Modifier.fillMaxWidth(),
-                                        textAlign = TextAlign.Center
-                                    )
-                                }
+                                title = { Text(text = "Update Course", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center) }
                             )
                         }
                     ) { padding ->
-                        UpdateUI(
-                            context = context,
-                            name = name,
-                            duration = duration,
-                            description = description,
-                            courseID = courseID,
-                            modifier = Modifier.padding(padding)
-                        )
+                        UpdateUI(context, name, duration, description, courseID, Modifier.padding(padding))
                     }
                 }
             }
@@ -74,108 +56,64 @@ class UpdateCourse : ComponentActivity() {
 }
 
 @Composable
-fun UpdateUI(
-    context: Context,
-    name: String?,
-    duration: String?,
-    description: String?,
-    courseID: String?,
-    modifier: Modifier = Modifier
-) {
+fun UpdateUI(context: Context, name: String?, duration: String?, description: String?, courseID: String?, modifier: Modifier) {
     var courseName by remember { mutableStateOf(name ?: "") }
     var courseDuration by remember { mutableStateOf(duration ?: "") }
     var courseDescription by remember { mutableStateOf(description ?: "") }
 
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .background(Color.White)
-            .padding(16.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        TextField(
-            value = courseName,
-            onValueChange = { courseName = it },
-            modifier = Modifier.fillMaxWidth(),
-            textStyle = TextStyle(color = Color.Black, fontSize = 15.sp),
-            colors = TextFieldDefaults.colors(
-                focusedContainerColor = Color(0xFFE0E0E0),
-                unfocusedContainerColor = Color(0xFFE0E0E0)
-            )
-        )
-
-        Spacer(modifier = Modifier.height(20.dp))
-
-        TextField(
-            value = courseDuration,
-            onValueChange = { courseDuration = it },
-            modifier = Modifier.fillMaxWidth(),
-            textStyle = TextStyle(color = Color.Black, fontSize = 15.sp),
-            colors = TextFieldDefaults.colors(
-                focusedContainerColor = Color(0xFFE0E0E0),
-                unfocusedContainerColor = Color(0xFFE0E0E0)
-            )
-        )
-
-        Spacer(modifier = Modifier.height(20.dp))
-
-        TextField(
-            value = courseDescription,
-            onValueChange = { courseDescription = it },
-            modifier = Modifier.fillMaxWidth(),
-            textStyle = TextStyle(color = Color.Black, fontSize = 15.sp),
-            colors = TextFieldDefaults.colors(
-                focusedContainerColor = Color(0xFFE0E0E0),
-                unfocusedContainerColor = Color(0xFFE0E0E0)
-            )
-        )
-
+    Column(modifier = modifier.fillMaxSize().padding(20.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
+        TextField(value = courseName, onValueChange = { courseName = it }, placeholder = { Text("Course Name") }, modifier = Modifier.fillMaxWidth(), colors = TextFieldDefaults.colors(focusedContainerColor = Color(0xFFE0E0E0), unfocusedContainerColor = Color(0xFFE0E0E0)))
+        Spacer(modifier = Modifier.height(15.dp))
+        TextField(value = courseDuration, onValueChange = { courseDuration = it }, placeholder = { Text("Duration") }, modifier = Modifier.fillMaxWidth(), colors = TextFieldDefaults.colors(focusedContainerColor = Color(0xFFE0E0E0), unfocusedContainerColor = Color(0xFFE0E0E0)))
+        Spacer(modifier = Modifier.height(15.dp))
+        TextField(value = courseDescription, onValueChange = { courseDescription = it }, placeholder = { Text("Description") }, modifier = Modifier.fillMaxWidth(), colors = TextFieldDefaults.colors(focusedContainerColor = Color(0xFFE0E0E0), unfocusedContainerColor = Color(0xFFE0E0E0)))
         Spacer(modifier = Modifier.height(30.dp))
-
+        
+        // Nút Cập nhật
         Button(
             onClick = {
-                if (courseName.isEmpty() || courseDuration.isEmpty() || courseDescription.isEmpty()) {
-                    Toast.makeText(context, "Please fill all fields", Toast.LENGTH_SHORT).show()
+                if (courseID.isNullOrEmpty()) {
+                    Toast.makeText(context, "ID missing!", Toast.LENGTH_SHORT).show()
                 } else {
-                    updateData(courseID, courseName, courseDuration, courseDescription, context)
+                    val db = FirebaseFirestore.getInstance()
+                    val data = Course(courseName, courseDuration, courseDescription, courseID)
+                    db.collection("Courses").document(courseID).set(data)
+                        .addOnSuccessListener {
+                            Toast.makeText(context, "Updated Successfully!", Toast.LENGTH_SHORT).show()
+                            // Chuyển về trang danh sách ngay
+                            context.startActivity(Intent(context, CourseDetailsActivity::class.java))
+                        }
+                        .addOnFailureListener { e ->
+                            Toast.makeText(context, "Update Failed: ${e.message}", Toast.LENGTH_SHORT).show()
+                        }
                 }
             },
-            modifier = Modifier.fillMaxWidth().height(50.dp),
+            modifier = Modifier.fillMaxWidth().height(55.dp),
+            shape = RoundedCornerShape(25.dp),
             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6200EE))
-        ) {
-            Text("Update Data", color = Color.White)
-        }
+        ) { Text("Update Data") }
 
-        Spacer(modifier = Modifier.height(10.dp))
+        Spacer(modifier = Modifier.height(15.dp))
 
-        // Nút quay lại giao diện ban đầu (MainActivity)
+        // Nút Xem danh sách
+        Button(
+            onClick = { context.startActivity(Intent(context, CourseDetailsActivity::class.java)) },
+            modifier = Modifier.fillMaxWidth().height(55.dp),
+            shape = RoundedCornerShape(25.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4F628E))
+        ) { Text("View Courses") }
+
+        Spacer(modifier = Modifier.height(15.dp))
+
+        // Nút Quay lại trang chủ
         OutlinedButton(
             onClick = {
                 val i = Intent(context, MainActivity::class.java)
                 i.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
                 context.startActivity(i)
             },
-            modifier = Modifier.fillMaxWidth().height(50.dp)
-        ) {
-            Text("Back to Home", color = Color(0xFF6200EE))
-        }
-    }
-}
-
-fun updateData(courseID: String?, name: String, duration: String, description: String, context: Context) {
-    val db = FirebaseFirestore.getInstance()
-    val updatedCourse = Course(name, duration, description, courseID)
-
-    if (courseID != null) {
-        db.collection("Courses").document(courseID)
-            .set(updatedCourse)
-            .addOnSuccessListener {
-                Toast.makeText(context, "Course Updated successfully", Toast.LENGTH_SHORT).show()
-                context.startActivity(Intent(context, CourseDetailsActivity::class.java))
-            }
-            .addOnFailureListener {
-                Toast.makeText(context, "Fail to update course", Toast.LENGTH_SHORT).show()
-            }
+            modifier = Modifier.fillMaxWidth().height(55.dp),
+            shape = RoundedCornerShape(25.dp)
+        ) { Text("Back to Home", color = Color(0xFF6200EE)) }
     }
 }
